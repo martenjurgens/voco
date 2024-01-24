@@ -4,12 +4,14 @@ include 'db_config.php';
 header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST["username"]);
+    $username = filter_var(trim($_POST["username"]), FILTER_SANITIZE_STRING);
 
-    $checkSql = "SELECT * FROM users WHERE username = '$username'";
-    $result = $conn->query($checkSql);
-    
-     if ($result->num_rows > 0) {
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
         session_start();
 
         $_SESSION["username"] = $username;
@@ -18,6 +20,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         echo json_encode(array("status" => "error", "message" => "User not found"));
     }
+
+    $stmt->close();
 }
 
 $conn->close();
